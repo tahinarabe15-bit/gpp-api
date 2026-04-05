@@ -8,10 +8,10 @@ const pool = new Pool({
   database: process.env.DB_NAME     || 'postgres',
   user:     process.env.DB_USER     || 'postgres',
   password: process.env.DB_PASSWORD || '',
-  // Pool : max 10 connexions simultanées
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 });
 
 // Test de connexion au démarrage
