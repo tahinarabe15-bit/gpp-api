@@ -1,25 +1,50 @@
 // server.js — Point d'entrée principal de l'API GPP
 require('dotenv').config();
-
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 
 const app = express();
-
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Routes API ────────────────────────────────────────────
-// credits exporte { router, anomaliesStore }
-const { router: creditsRouter } = require('./routes/credits');
-app.use('/api/credits', creditsRouter);
+let creditsRouter;
+try {
+  const m = require('./routes/credits');
+  creditsRouter = m.router;
+  console.log('✅ Route credits chargée');
+} catch(e) {
+  console.error('❌ credits:', e.message);
+  process.exit(1);
+}
 
-app.use('/api/encours',     require('./routes/encours'));
-app.use('/api/conventions', require('./routes/conventions'));
-app.use('/api/lettres',     require('./routes/lettres'));
+try {
+  app.use('/api/credits', creditsRouter);
+  app.use('/api/encours', require('./routes/encours'));
+  console.log('✅ Route encours chargée');
+} catch(e) {
+  console.error('❌ encours:', e.message);
+  process.exit(1);
+}
+
+try {
+  app.use('/api/conventions', require('./routes/conventions'));
+  console.log('✅ Route conventions chargée');
+} catch(e) {
+  console.error('❌ conventions:', e.message);
+  process.exit(1);
+}
+
+try {
+  app.use('/api/lettres', require('./routes/lettres'));
+  console.log('✅ Route lettres chargée');
+} catch(e) {
+  console.error('❌ lettres:', e.message);
+  process.exit(1);
+}
 
 // ── Route santé ───────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -39,10 +64,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 const { pool } = require('./db');
+
 pool.connect()
   .then(client => {
     client.release();
-    console.log(`\n✅ PostgreSQL connecté — ${process.env.DB_HOST}:${process.env.DB_PORT||5432}/${process.env.DB_NAME}`);
+    console.log(`✅ PostgreSQL connecté — ${process.env.DB_HOST}:${process.env.DB_PORT||5432}/${process.env.DB_NAME}`);
   })
   .catch(err => console.error('❌ PostgreSQL connexion échouée:', err.message));
 
