@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPP Fonds — Tableau de Bord</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b27;
+    --bg3: #1d2438;
+    --card: #1a2035;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #8892a4;
+    --accent: #4f8ef7;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --teal: #14b8a6;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.35);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; overflow-x: hidden; }
+
+  /* ── LAYOUT ── */
+  .app { display: grid; grid-template-columns: 228px 1fr; grid-template-rows: 58px 1fr; min-height: 100vh; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg, #111827 0%, #161b27 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 12px rgba(0,0,0,0.4);
+  }
+  .topbar-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; }
+  .topbar-logo span {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: #fff;
+    box-shadow: 0 2px 8px rgba(79,142,247,0.4);
+  }
+  .search-wrap { flex: 1; max-width: 440px; margin-left: 20px; position: relative; }
+  .search-wrap input {
+    width: 100%; padding: 8px 14px 8px 38px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border2);
+    border-radius: 20px; color: var(--text);
+    font-family: var(--font); font-size: 13px; outline: none;
+    transition: all 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); background: rgba(79,142,247,0.06); }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.35; }
+  .search-results {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius); max-height: 300px; overflow-y: auto;
+    display: none; z-index: 200; box-shadow: var(--shadow);
+  }
+  .search-results.open { display: block; }
+  .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .search-result-item:hover { background: rgba(79,142,247,0.08); }
+  .search-result-item .sr-label { font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .search-result-item .sr-val { font-size: 13px; color: var(--text); font-family: var(--mono); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .badge-ifp { background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.2); border-radius: 20px; padding: 5px 14px; font-size: 12px; color: var(--muted); }
+  .badge-ifp strong { color: var(--accent); }
+  .avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(79,142,247,0.3); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+    position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto;
+  }
+  .nav-section { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(136,146,164,0.5); padding: 14px 10px 5px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.15s; color: var(--muted);
+    font-size: 13px; font-weight: 400; border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,0.12); color: var(--accent); font-weight: 500; }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .dot-red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+  /* ── MAIN ── */
+  .main { padding: 28px; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 600; color: var(--text); }
+  .page-header p { color: var(--muted); font-size: 13px; margin-top: 5px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 22px;
+    position: relative; overflow: hidden; transition: transform 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--kpi-color, var(--accent));
+  }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  .kpi-val { font-size: 24px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  /* ── CHARTS ── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .chart-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .chart-title span { color: var(--muted); font-size: 11px; }
+
+  /* ── GAUGES ── */
+  .gauge-wrap { display: flex; flex-direction: column; align-items: center; }
+  .gauge-svg { width: 160px; height: 92px; }
+  .gauge-val { font-size: 24px; font-weight: 600; margin-top: 4px; text-align: center; }
+  .gauge-label { font-size: 12px; color: var(--muted); text-align: center; margin-top: 2px; }
+  .gauges-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+
+  /* ── TABLE CARD ── */
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+  .table-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .table-card-header h3 { font-size: 14px; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 16px; text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+    font-weight: 400; white-space: nowrap; cursor: pointer; user-select: none;
+    transition: color 0.15s;
+  }
+  thead th:hover { color: var(--text); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(79,142,247,0.04); }
+  td { padding: 11px 16px; font-size: 13px; color: var(--text); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── PILLS ── */
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .pill-green { background: rgba(16,185,129,0.12); color: #34d399; }
+  .pill-amber { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .pill-red   { background: rgba(239,68,68,0.12);  color: #f87171; }
+  .pill-blue  { background: rgba(79,142,247,0.12); color: var(--accent); }
+  .pill-gray  { background: rgba(136,146,164,0.12);color: var(--muted); }
+
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; white-space: nowrap; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #3b7de8); color: #fff; box-shadow: 0 2px 8px rgba(79,142,247,0.25); }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text); }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); }
+  .btn-ghost { background: transparent; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,0.18); }
+  .btn-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--green); }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-select {
+    background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+    padding: 6px 10px; border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 13px; outline: none; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+
+  /* ── PAGINATION ── */
+  .pagination { display: flex; align-items: center; gap: 6px; padding: 12px 20px; border-top: 1px solid var(--border); justify-content: flex-end; }
+  .page-btn { width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid var(--border2); color: var(--muted); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+  .page-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-info { color: var(--muted); font-size: 12px; margin-right: auto; }
+
+  /* ── IMPORT / EXPORT ── */
+  .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .import-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .import-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .import-card p { color: var(--muted); font-size: 12px; margin-bottom: 20px; line-height: 1.5; }
+  .dropzone {
+    border: 2px dashed var(--border2); border-radius: var(--radius);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    transition: all 0.2s; position: relative;
+  }
+  .dropzone:hover, .dropzone.over { border-color: var(--accent); background: rgba(79,142,247,0.04); }
+  .dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .dropzone-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+  .dropzone-text { color: var(--muted); font-size: 13px; }
+  .dropzone-text strong { color: var(--accent); }
+  .import-status { margin-top: 12px; }
+  .status-line { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .status-line:last-child { border-bottom: none; }
+  .export-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .export-btn-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .export-btn-card:hover { border-color: var(--accent); background: rgba(79,142,247,0.06); transform: translateY(-2px); }
+  .export-btn-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .export-btn-card .name { font-size: 13px; font-weight: 500; }
+  .export-btn-card .desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── LETTERS ── */
+  .letters-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .letter-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; cursor: pointer;
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .letter-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .letter-card::after { content: '→'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 20px; transition: all 0.2s; }
+  .letter-card:hover::after { color: var(--accent); right: 16px; }
+  .letter-icon { font-size: 26px; margin-bottom: 10px; }
+  .letter-title { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .letter-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .letter-badge { display: inline-block; margin-top: 10px; }
+
+  /* ── CONVENTION FORM ── */
+  .conv-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 680px; }
+  .conv-form-title { font-size: 14px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: var(--font); font-size: 13px; padding: 9px 12px;
+    outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 28px; width: 92%; max-width: 560px;
+    max-height: 82vh; overflow-y: auto;
+    transform: scale(0.94); transition: transform 0.2s;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .modal-header h2 { font-size: 16px; font-weight: 600; }
+  .modal-close { background: rgba(255,255,255,0.06); border: none; color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+
+  /* ── PROGRESS & BARS ── */
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.5s; }
+  .stat-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .stat-bar-label { font-size: 12px; color: var(--muted); min-width: 90px; }
+  .stat-bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .stat-bar-val { font-size: 12px; font-family: var(--mono); min-width: 70px; text-align: right; color: var(--muted); }
+
+  /* ── LOG ── */
+  .log-line { padding: 8px 16px; font-size: 12px; font-family: var(--mono); border-bottom: 1px solid var(--border); display: flex; gap: 16px; }
+  .log-time { color: var(--muted); min-width: 80px; }
+  .log-level { min-width: 44px; }
+  .log-level.info  { color: var(--accent); }
+  .log-level.warn  { color: var(--amber); }
+  .log-level.error { color: var(--red); }
+  .log-level.ok    { color: var(--green); }
+  .log-msg { flex: 1; color: var(--text); }
+
+  /* ── TOAST ── */
+  .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 13px 16px;
+    min-width: 290px; max-width: 380px;
+    display: flex; align-items: flex-start; gap: 10px;
+    animation: toastIn 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .toast.removing { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(24px); } }
+  .toast-icon { flex-shrink: 0; font-size: 16px; }
+  .toast-title { font-size: 13px; font-weight: 500; }
+  .toast-msg { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── CONVENTION ERROR BANNER ── */
+  .conv-error-banner {
+    display: none; background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3); border-radius: 8px;
+    padding: 12px 16px; color: var(--red); font-size: 13px;
+    margin-bottom: 16px; line-height: 1.5;
+  }
+
+  /* ── MISC ── */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 32px; margin-bottom: 12px; opacity: 0.35; }
+  .empty-state p { font-size: 13px; }
+  .sep { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row, .import-grid, .letters-grid { grid-template-columns: 1fr; }
+    .gauges-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <span>G</span>GPP Fonds
+    </div>
+    <div class="search-wrap">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="globalSearch" placeholder="Rechercher un crédit, client…" autocomplete="off">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="badge-ifp" id="badge-convention">IFP : <strong>—</strong></div>
+      <div class="avatar" onclick="showToast('Profil','Fonctionnalité à venir','info')">AD</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-section">Vue d'ensemble</div>
+    <button class="nav-item active" onclick="goto('vue-ensemble')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </button>
+
+    <div class="nav-section">Données</div>
+    <button class="nav-item" onclick="goto('credits')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      F2 Crédits
+    </button>
+    <button class="nav-item" onclick="goto('encours')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Encours
+      <div class="dot dot-green"></div>
+    </button>
+    <button class="nav-item" onclick="goto('historique')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Historique
+    </button>
+
+    <div class="nav-section">Opérations</div>
+    <button class="nav-item" onclick="goto('import-export')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import / Export
+    </button>
+    <button class="nav-item" onclick="goto('lettres')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      F3 & Lettres
+      <div class="dot dot-amber"></div>
+    </button>
+    <button class="nav-item" onclick="goto('anomalies')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m10.29 3.86-8.25 14.2A1 1 0 0 0 2.88 20h16.24a1 1 0 0 0 .84-1.94l-8.25-14.2a1 1 0 0 0-1.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Anomalies / Rejets
+      <div class="dot dot-red"></div>
+    </button>
+
+    <div class="nav-section">Paramètres</div>
+    <button class="nav-item" onclick="goto('conventions')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Conventions
+    </button>
+    <button class="nav-item" onclick="goto('journal')">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Journal
+    </button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- PAGE: VUE D'ENSEMBLE -->
+    <section class="page active" id="page-vue-ensemble">
+      <div class="page-header">
+        <h1>Tableau de bord</h1>
+        <p>Dernier encours : <strong id="lastEmg">—</strong></p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-color: var(--accent)">
+          <div class="kpi-label">Encours total</div>
+          <div class="kpi-val" id="kpi-encours">—</div>
+          <div class="kpi-sub">capital final (MGA)</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color: var(--green)">
+          <div class="kpi-label">Nbre de crédits</div>
+          <div class="kpi-val" id="kpi-nb">—</div>
+          <div class="kpi-sub">dans le portefeuille actif</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color: var(--amber)">
+          <div class="kpi-label">Impayés capital</div>
+          <div class="kpi-val" id="kpi-imp">—</div>
+          <div class="kpi-sub">montant total (MGA)</div>
+        </div>
+      </div>
+
+      <div class="gauges-row">
+        <div class="chart-card">
+          <div class="chart-title">Taux de remboursement <span>global</span></div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 160 90">
+              <path d="M20 80 A60 60 0 0 1 140 80" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="10" stroke-linecap="round"/>
+              <path id="gauge-remb" d="M20 80 A60 60 0 0 1 140 80" fill="none" stroke="#10b981" stroke-width="10" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="gauge-val" id="gauge-remb-val" style="color:var(--green)">—</div>
+            <div class="gauge-label">Remboursé</div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Stop Loss <span id="stop-loss-label">chargement…</span></div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 160 90">
+              <path d="M20 80 A60 60 0 0 1 140 80" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="10" stroke-linecap="round"/>
+              <path id="gauge-stoploss" d="M20 80 A60 60 0 0 1 140 80" fill="none" stroke="#4f8ef7" stroke-width="10" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="gauge-val" id="gauge-sl-val" style="color:var(--accent)">—</div>
+            <div class="gauge-label">des appels payés</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:24px;padding:16px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:500">Taux de dégradation</span>
+          <span id="kpi-taux-degrad" style="font-size:20px;font-weight:600;color:var(--muted)">N/A</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">
+          Formule : appels payés nets restitutions / ((encours global × quotité) + appels payés nets restitutions)
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Répartition par nature de crédit</div>
+          <div id="bar-nature" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+            <div class="empty-state"><div class="icon">📊</div><p>Connectez la base pour afficher</p></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Dernières entrées F2 <span id="last-f2-date">—</span></div>
+          <div id="recent-credits-list">
+            <div class="empty-state"><div class="icon">📋</div><p>Aucune donnée disponible</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">Évolution encours mensuel <span>historique</span></div>
+        <canvas id="chartEncours" height="80"></canvas>
+      </div>
+    </section>
+
+    <!-- PAGE: CREDITS F2 -->
+    <section class="page" id="page-credits">
+      <div class="page-header">
+        <h1>F2 Crédits</h1>
+        <p>Portefeuille garanti — gpp_exhaustives.f2_credits</p>
+      </div>
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Liste des crédits</h3>
+          <div class="filters">
+            <input type="text" id="f2-search" class="filter-select" placeholder="Rechercher ID, client…" style="width:200px" oninput="applyCreditsFilter()">
+            <select class="filter-select" id="f2-filter-nature" onchange="applyCreditsFilter()">
+              <option value="">Toutes natures</option>
+            </select>
+            <select class="filter-select" id="f2-filter-objet" onchange="applyCreditsFilter()">
+              <option value="">Tous objets</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="goto('import-export')">📥 Importer</button>
+            <button class="btn btn-primary btn-sm" onclick="exportTable('f2_credits')">📤 Exporter</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="f2Table">
+            <thead>
+              <tr>
+                <th onclick="sortTable('f2Table',0)">N°</th>
+                <th onclick="sortTable('f2Table',1)">ID Crédit</th>
+                <th onclick="sortTable('f2Table',2)">Client</th>
+                <th onclick="sortTable('f2Table',3)">Nature</th>
+                <th onclick="sortTable('f2Table',4)">Objet crédit</th>
+                <th onclick="sortTable('f2Table',5)">Montant (MGA)</th>
+                <th onclick="sortTable('f2Table',6)">Date ouv.</th>
+                <th onclick="sortTable('f2Table',7)">Échéance</th>
+                <th onclick="sortTable('f2Table',8)">Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="f2Body">
+              <tr><td colspan="10" class="empty-state" style="text-align:center;padding:32px">
+                <div>📋 Aucune donnée — importez un fichier F2</div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span class="page-info" id="f2-page-info">0 crédits</span>
+          <button class="page-btn" onclick="changePage('f2',-1)">‹</button>
+          <button class="page-btn active" id="f2-page-num">1</button>
+          <button class="page-btn" onclick="changePage('f2',1)">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: ENCOURS -->
+    <section class="page" id="page-encours">
+      <div class="page-header">
+        <h1>Encours Crédits</h1>
+        <p>Données mensuelles — gpp_exhaustives.encours_historique</p>
+      </div>
+      <div class="filters" style="margin-bottom:16px">
+        <select class="filter-select" id="enc-filter-annee" onchange="filterEncours()">
+          <option>2026</option><option>2025</option>
+        </select>
+        <select class="filter-select" id="enc-filter-mois" onchange="filterEncours()">
+          <option value="">Tous les mois</option>
+          <option>janvier</option><option>février</option><option>mars</option>
+          <option>avril</option><option>mai</option><option>juin</option>
+          <option>juillet</option><option>août</option><option>septembre</option>
+          <option>octobre</option><option>novembre</option><option>décembre</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="exportTable('encours_credits')">Exporter</button>
+      </div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Encours mensuel</h3></div>
+        <div style="overflow-x:auto">
+          <table id="encTable">
+            <thead>
+              <tr>
+                <th>ID Crédit</th>
+                <th>Année</th>
+                <th>Mois</th>
+                <th>Encours initial</th>
+                <th>Encours final</th>
+                <th>Impayés cap.</th>
+                <th>Nb j. retard</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="encBody">
+              <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">📊 Aucune donnée — importez un fichier encours</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span class="page-info" id="enc-page-info">0 lignes</span>
+          <button class="page-btn" onclick="changePage('enc',-1)">‹</button>
+          <button class="page-btn active" id="enc-page-num">1</button>
+          <button class="page-btn" onclick="changePage('enc',1)">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: HISTORIQUE -->
+    <section class="page" id="page-historique">
+      <div class="page-header">
+        <h1>Historique mensuel</h1>
+        <p>Évolution des encours par crédit</p>
+      </div>
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">Évolution du portefeuille <span>encours_final cumulé</span></div>
+        <canvas id="chartHisto" height="100"></canvas>
+      </div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Données historiques</h3></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Crédit</th><th>Année</th><th>Mois</th><th>Initial (MGA)</th><th>Final (MGA)</th><th>Retard (j)</th><th>Date EMG</th></tr></thead>
+            <tbody id="histBody">
+              <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">📈 Aucun historique disponible</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span class="page-info" id="hist-page-info">0 lignes</span>
+          <button class="page-btn" onclick="changePage('hist',-1)">‹</button>
+          <button class="page-btn active" id="hist-page-num">1</button>
+          <button class="page-btn" onclick="changePage('hist',1)">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: IMPORT / EXPORT -->
+    <section class="page" id="page-import-export">
+      <div class="page-header">
+        <h1>Import / Export</h1>
+        <p>Chargement des fichiers F2 et Encours, export en XLSX</p>
+      </div>
+      <div class="import-grid">
+        <div class="import-card">
+          <h3>📥 Importer F2 Crédits</h3>
+          <p>Fichier Excel ou CSV : nom_ifp, id_gpp, id_credit, nom_client, nature_credit, montant_credit, date_ouverture, date_echeance…</p>
+          <div class="dropzone" id="dz-f2" ondragover="dzOver(event,'dz-f2')" ondragleave="dzLeave('dz-f2')" ondrop="dzDrop(event,'f2')">
+            <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(event,'f2')">
+            <div class="dropzone-icon">📋</div>
+            <div class="dropzone-text">Glissez votre fichier ici ou <strong>cliquez pour choisir</strong></div>
+          </div>
+          <div class="import-status" id="status-f2"></div>
+        </div>
+        <div class="import-card">
+          <h3>📥 Importer Encours</h3>
+          <p>Fichier Excel ou CSV mensuel : id_credit, date_emg, encours_initial, encours_final, nb_jours_retard, impayes_capital…</p>
+          <div class="dropzone" id="dz-enc" ondragover="dzOver(event,'dz-enc')" ondragleave="dzLeave('dz-enc')" ondrop="dzDrop(event,'enc')">
+            <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(event,'enc')">
+            <div class="dropzone-icon">📊</div>
+            <div class="dropzone-text">Glissez votre fichier ici ou <strong>cliquez pour choisir</strong></div>
+          </div>
+          <div class="import-status" id="status-enc"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📤 Exporter</div>
+        <div class="export-grid">
+          <div class="export-btn-card" onclick="exportTable('conventions')">
+            <div class="icon">📜</div><div class="name">Conventions</div>
+            <div class="desc">gpp_conventions.conventions</div>
+          </div>
+          <div class="export-btn-card" onclick="exportTable('f2_credits')">
+            <div class="icon">💳</div><div class="name">F2 Crédits</div>
+            <div class="desc">Portefeuille complet</div>
+          </div>
+          <div class="export-btn-card" onclick="exportTable('encours_credits')">
+            <div class="icon">📈</div><div class="name">Encours</div>
+            <div class="desc">Dernier snapshot mensuel</div>
+          </div>
+          <div class="export-btn-card" onclick="exportTable('exhaustive')">
+            <div class="icon">🗂️</div><div class="name">Exhaustive</div>
+            <div class="desc">F2 + Encours — vue jointe</div>
+          </div>
+          <div class="export-btn-card" onclick="exportTable('gpp_hebdo')">
+            <div class="icon">📋</div><div class="name">GPP Hebdomadaire</div>
+            <div class="desc">Crédits avec encours actif (> 0)</div>
+          </div>
+          <div class="export-btn-card" onclick="exportTable('rejets')">
+            <div class="icon">⚠️</div><div class="name">Rejets & Anomalies</div>
+            <div class="desc">f2_rejets + encours_rejets</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: LETTRES -->
+    <section class="page" id="page-lettres">
+      <div class="page-header">
+        <h1>F3 & Lettres officielles</h1>
+        <p>Génération des lettres de notification GPP</p>
+      </div>
+
+      <!-- SEULEMENT 3 cartes — Restitution supprimée -->
+      <div class="letters-grid">
+        <div class="letter-card" onclick="openLetterModal('f3')">
+          <div class="letter-icon">✅</div>
+          <div class="letter-title">Lettre F3 — Attestation de garantie</div>
+          <div class="letter-desc">Notifie l'IFP que les crédits listés sont garantis par le Fonds GPP.</div>
+          <div class="letter-badge"><span class="pill pill-green">Actif</span></div>
+        </div>
+        <div class="letter-card" onclick="openLetterModal('ptf')">
+          <div class="letter-icon">📉</div>
+          <div class="letter-title">Lettre Niveau PTF — Stop Loss</div>
+          <div class="letter-desc">Notification taux de dégradation, appels en garantie et plafond Stop Loss.</div>
+          <div class="letter-badge"><span class="pill pill-amber">Actif</span></div>
+        </div>
+        <div class="letter-card" onclick="openLetterModal('sortie')">
+          <div class="letter-icon">🚪</div>
+          <div class="letter-title">Lettre de sortie PTF</div>
+          <div class="letter-desc">Crédits avec encours final = 0, sortis de la garantie GPP.</div>
+          <div class="letter-badge"><span class="pill pill-red">Actif</span></div>
+        </div>
+      </div>
+
+      <!-- Crédits sortis PTF -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Crédits sortis du portefeuille <span class="pill pill-red" style="margin-left:8px" id="sortie-count-badge">Encours = 0</span></h3>
+          <button class="btn btn-outline btn-sm" onclick="openLetterModal('sortie')">Générer lettre sortie</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ID Crédit</th><th>Client</th><th>Montant initial</th><th>Date EMG</th><th>Statut</th></tr></thead>
+            <tbody id="sortieBody">
+              <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">⏳ Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: ANOMALIES -->
+    <section class="page" id="page-anomalies">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Anomalies & Rejets</h1>
+          <p>Crédits rejetés lors des imports — mis à jour en temps réel</p>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearAnomalies()">🗑 Effacer les anomalies</button>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="kpi-card" style="--kpi-color:var(--red);flex:1;min-width:160px">
+          <div class="kpi-label">Total anomalies</div>
+          <div class="kpi-val" id="rej-f2-count">0</div>
+          <div class="kpi-sub">depuis le démarrage du serveur</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--amber);flex:1;min-width:160px">
+          <div class="kpi-label">Dernier import</div>
+          <div class="kpi-val" id="rej-last-file" style="font-size:13px;margin-top:4px">—</div>
+          <div class="kpi-sub">fichier source</div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Détail des rejets</h3>
+          <button class="btn btn-outline btn-sm" onclick="loadAnomalies()">↻ Actualiser</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ID Crédit</th><th>Motif</th><th>Fichier source</th><th>Date</th></tr></thead>
+            <tbody id="anomaliesBody">
+              <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Aucune anomalie enregistrée</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: CONVENTIONS -->
+    <section class="page" id="page-conventions">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Gestion des Conventions</h1>
+          <p>gpp_conventions.conventions — Ajout / modification d'une convention IFP</p>
+        </div>
+        <button class="btn btn-success btn-sm" onclick="resetConvForm()">+ Nouvelle convention</button>
+      </div>
+
+      <div class="table-card" style="margin-bottom:24px">
+        <div class="table-card-header">
+          <h3>Conventions enregistrées</h3>
+          <button class="btn btn-outline btn-sm" onclick="loadConventions()">↻ Actualiser</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Nom IFP</th><th>ID GPP</th><th>Quotité</th><th>Stop Loss</th><th>Montant min</th><th>Montant max</th><th>Durée max</th><th>Plafond</th><th>Signature</th><th>Actions</th></tr></thead>
+            <tbody id="convBody">
+              <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Formulaire convention -->
+      <div class="conv-form">
+        <div class="conv-form-title">
+          📝 <span id="conv-form-mode-label">Créer / Modifier une convention</span>
+        </div>
+
+        <!-- Bandeau erreur API -->
+        <div class="conv-error-banner" id="conv-error-banner"></div>
+
+        <div class="form-row">
+          <div class="form-group"><label>Nom IFP *</label><input type="text" id="cv-nom" placeholder="Ex: PAMF"></div>
+          <div class="form-group"><label>ID GPP *</label><input type="text" id="cv-idgpp" placeholder="Ex: PAMF_GPP_DIGITAUX"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Quotité garantie (%)</label><input type="number" id="cv-quotite" value="50" min="0" max="100"></div>
+          <div class="form-group"><label>Stop Loss (%)</label><input type="number" id="cv-stoploss" value="30" min="0" max="100"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Date de signature</label><input type="date" id="cv-date"></div>
+          <div class="form-group"><label>Plafond encours (MGA)</label><input type="number" id="cv-plafond" value="5000000000"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Montant min (MGA)</label><input type="number" id="cv-min" value="200000"></div>
+          <div class="form-group"><label>Montant max (MGA)</label><input type="number" id="cv-max" value="4000000"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Durée max (jours)</label>
+          <input type="number" id="cv-duree" value="30">
+        </div>
+        <div class="form-group" style="margin-bottom:20px">
+          <label>Objets crédit éligibles (séparés par virgule)</label>
+          <textarea id="cv-objets" rows="2">Fonds agricole, Urgence, Investissement, Entrepreneuriat</textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveConvention()">💾 Enregistrer en base</button>
+          <button class="btn btn-outline" onclick="genConvSQL()">📋 Générer SQL</button>
+          <button class="btn btn-ghost" onclick="resetConvForm()">✕ Réinitialiser</button>
+        </div>
+        <div id="sql-output" style="margin-top:16px;display:none">
+          <pre id="sql-text" style="background:var(--bg3);padding:12px;border-radius:8px;font-family:var(--mono);font-size:12px;overflow-x:auto;border:1px solid var(--border)"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE: JOURNAL -->
+    <section class="page" id="page-journal">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Journal d'activité</h1>
+          <p>Historique des opérations — imports, exports, générations de lettres</p>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearJournal()">🗑 Effacer le journal</button>
+      </div>
+      <div class="table-card">
+        <div style="overflow:hidden">
+          <div id="journal-list">
+            <div class="log-line"><span class="log-time">—</span><span class="log-level info">INFO</span><span class="log-msg">En attente des premières opérations d'import…</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL LETTRE -->
+<div class="modal-overlay" id="modalLetter">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h2 id="modal-letter-title">Générer une lettre</h2>
+      <button class="modal-close" onclick="closeModal('modalLetter')">×</button>
+    </div>
+    <div id="modal-letter-body"></div>
+  </div>
+</div>
+
+<!-- MODAL CRÉDIT DÉTAIL / ÉDITION -->
+<div class="modal-overlay" id="modalCredit">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <h2 id="modal-credit-title">Détail du crédit</h2>
+      <button class="modal-close" onclick="closeModal('modalCredit')">×</button>
+    </div>
+    <div id="modal-credit-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <p style="color:var(--muted);grid-column:1/-1">Chargement…</p>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-outline" onclick="closeModal('modalCredit')">Fermer</button>
+      <button class="btn btn-primary" id="btn-save-credit" onclick="saveCredit()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENCOURS -->
+<div class="modal-overlay" id="modalEncours">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-encours-title">Éditer encours</h2>
+        <p id="modal-encours-subtitle" style="color:var(--muted);font-size:12px;margin-top:2px"></p>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalEncours')">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="modal-encours-body"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-outline" onclick="closeModal('modalEncours')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-encours" onclick="saveEncours()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ==================== NAVIGATION ====================
+const PAGES = ['vue-ensemble','credits','encours','historique','import-export','lettres','anomalies','conventions','journal'];
+function goto(id) {
+  PAGES.forEach(p => {
+    const pg = document.getElementById('page-'+p);
+    if (pg) pg.classList.toggle('active', p === id);
+  });
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick') === `goto('${id}')`);
+  });
+  addLog('INFO', `Navigation → ${id}`);
+}
+
+// ==================== TOAST ====================
+function showToast(title, msg, type='info') {
+  const icons = {info:'ℹ️', ok:'✅', warn:'⚠️', error:'❌'};
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<div class="toast-icon">${icons[type]||'ℹ️'}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  c.appendChild(t);
+  setTimeout(() => { t.classList.add('removing'); setTimeout(()=>t.remove(), 300); }, 4000);
+}
+
+// ==================== JOURNAL ====================
+function addLog(level, msg) {
+  const now = new Date();
+  const time = now.toTimeString().slice(0,8);
+  const el = document.getElementById('journal-list');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const cls = {INFO:'info',OK:'ok',WARN:'warn',ERROR:'error'}[level]||'info';
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-level ${cls}">${level}</span><span class="log-msg">${msg}</span>`;
+  el.insertBefore(line, el.firstChild);
+}
+window.clearJournal = function() {
+  if (!confirm('Effacer le journal ?')) return;
+  document.getElementById('journal-list').innerHTML =
+    '<div class="log-line"><span class="log-time">—</span><span class="log-level info">INFO</span><span class="log-msg">Journal effacé</span></div>';
+  showToast('Journal effacé', '', 'ok');
+};
+
+// ==================== TABLE SORT ====================
+function sortTable(tableId, col) {
+  const tb = document.getElementById(tableId);
+  if (!tb) return;
+  const rows = Array.from(tb.querySelectorAll('tbody tr'));
+  rows.sort((a,b) => {
+    const av = a.cells[col]?.innerText || '';
+    const bv = b.cells[col]?.innerText || '';
+    return av.localeCompare(bv, 'fr', {numeric:true});
+  });
+  const tbody = tb.querySelector('tbody');
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+// ==================== DROPZONE ====================
+function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('over'); }
+function dzLeave(id) { document.getElementById(id).classList.remove('over'); }
+function dzDrop(e, type) { e.preventDefault(); dzLeave('dz-'+type); const f = e.dataTransfer.files[0]; if(f) uploadImport(f, type); }
+function handleFile(e, type) { const f = e.target.files[0]; if(f) uploadImport(f, type); }
+
+// ==================== MODALS ====================
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ==================== CONVENTION ====================
+// Cache des conventions chargées (pour editConv)
+window._convCache = [];
+
+async function saveConvention() {
+  const nom = document.getElementById('cv-nom').value.trim();
+  const id  = document.getElementById('cv-idgpp').value.trim();
+  const errBanner = document.getElementById('conv-error-banner');
+  errBanner.style.display = 'none';
+
+  if (!nom || !id) {
+    errBanner.textContent = 'Les champs Nom IFP et ID GPP sont obligatoires.';
+    errBanner.style.display = 'block';
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API_BASE}/api/conventions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom_ifp:              nom,
+        id_gpp:               id,
+        quotite_garantie:     parseFloat(document.getElementById('cv-quotite').value) || 50,
+        stop_loss_pct:        parseFloat(document.getElementById('cv-stoploss').value) || 30,
+        montant_min:          parseFloat(document.getElementById('cv-min').value) || 200000,
+        montant_max:          parseFloat(document.getElementById('cv-max').value) || 4000000,
+        duree_max_jours:      parseInt(document.getElementById('cv-duree').value) || 30,
+        plafond_encours:      parseFloat(document.getElementById('cv-plafond').value) || 5000000000,
+        objet_credit_eligible: document.getElementById('cv-objets').value,
+        date_signature:       document.getElementById('cv-date').value || null,
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    showToast('Convention enregistrée ✅', `${nom} — ${id}`, 'ok');
+    addLog('OK', `Convention ${nom}/${id} sauvegardée en base PostgreSQL`);
+    loadConventions();
+  } catch (err) {
+    errBanner.textContent = `Erreur : ${err.message}`;
+    errBanner.style.display = 'block';
+    showToast('Erreur sauvegarde', err.message, 'error');
+    addLog('ERROR', `Convention ${nom} — ${err.message}`);
+  }
+}
+
+function resetConvForm() {
+  document.getElementById('cv-nom').value     = '';
+  document.getElementById('cv-idgpp').value   = '';
+  document.getElementById('cv-quotite').value = '50';
+  document.getElementById('cv-stoploss').value= '30';
+  document.getElementById('cv-date').value    = '';
+  document.getElementById('cv-plafond').value = '5000000000';
+  document.getElementById('cv-min').value     = '200000';
+  document.getElementById('cv-max').value     = '4000000';
+  document.getElementById('cv-duree').value   = '30';
+  document.getElementById('cv-objets').value  = 'Fonds agricole, Urgence, Investissement, Entrepreneuriat';
+  document.getElementById('conv-error-banner').style.display = 'none';
+  document.getElementById('sql-output').style.display = 'none';
+  document.getElementById('conv-form-mode-label').textContent = 'Créer / Modifier une convention';
+}
+
+function editConv(idx) {
+  const rows = window._convCache || [];
+  const c = rows[idx];
+  if (!c) return;
+  document.getElementById('cv-nom').value     = c.nom_ifp || '';
+  document.getElementById('cv-idgpp').value   = c.id_gpp  || '';
+  document.getElementById('cv-quotite').value = c.quotite_garantie || 50;
+  document.getElementById('cv-stoploss').value= c.stop_loss_pct    || 30;
+  document.getElementById('cv-date').value    = c.date_signature ? c.date_signature.slice(0,10) : '';
+  document.getElementById('cv-plafond').value = c.plafond_encours  || '';
+  document.getElementById('cv-min').value     = c.montant_min      || '';
+  document.getElementById('cv-max').value     = c.montant_max      || '';
+  document.getElementById('cv-duree').value   = c.duree_max_jours  || 30;
+  document.getElementById('cv-objets').value  = c.objet_credit_eligible || '';
+  document.getElementById('conv-error-banner').style.display = 'none';
+  document.getElementById('sql-output').style.display = 'none';
+  document.getElementById('conv-form-mode-label').textContent = `Modifier — ${c.nom_ifp}`;
+  document.querySelector('.conv-form').scrollIntoView({ behavior: 'smooth' });
+  showToast('Convention chargée', c.nom_ifp, 'info');
+}
+
+function genConvSQL() {
+  const nom  = document.getElementById('cv-nom').value;
+  const id   = document.getElementById('cv-idgpp').value;
+  const qte  = document.getElementById('cv-quotite').value;
+  const sl   = document.getElementById('cv-stoploss').value;
+  const dt   = document.getElementById('cv-date').value;
+  const mn   = document.getElementById('cv-min').value;
+  const mx   = document.getElementById('cv-max').value;
+  const dr   = document.getElementById('cv-duree').value;
+  const pl   = document.getElementById('cv-plafond').value;
+  const obj  = document.getElementById('cv-objets').value;
+  const sql = `INSERT INTO gpp_conventions.conventions
+  (nom_ifp, id_gpp, quotite_garantie, stop_loss_pct, objet_credit_eligible,
+   montant_min, montant_max, duree_max_jours, plafond_encours, date_signature)
+VALUES
+  ('${nom}', '${id}', ${qte}, ${sl}, '${obj}',
+   ${mn}, ${mx}, ${dr}, ${pl}, ${dt ? `'${dt}'` : 'NULL'})
+ON CONFLICT (nom_ifp, id_gpp) DO UPDATE SET
+  quotite_garantie      = EXCLUDED.quotite_garantie,
+  stop_loss_pct         = EXCLUDED.stop_loss_pct,
+  objet_credit_eligible = EXCLUDED.objet_credit_eligible,
+  montant_min           = EXCLUDED.montant_min,
+  montant_max           = EXCLUDED.montant_max,
+  duree_max_jours       = EXCLUDED.duree_max_jours,
+  plafond_encours       = EXCLUDED.plafond_encours,
+  date_signature        = EXCLUDED.date_signature;`;
+  document.getElementById('sql-text').textContent = sql;
+  document.getElementById('sql-output').style.display = 'block';
+}
+
+// ==================== CHARTS ====================
+let chartEnc, chartHist;
+function initCharts() {
+  const optBase = {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { labels: { color: '#8892a4', font: { family: 'DM Sans', size: 12 } } } },
+    scales: {
+      x: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+    }
+  };
+  chartEnc = new Chart(document.getElementById('chartEncours').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{ label: 'Encours final (MGA)', data: [], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.07)', borderWidth: 2, pointRadius: 4, fill: true, tension: 0.4 }]
+    },
+    options: { ...optBase }
+  });
+  chartHist = new Chart(document.getElementById('chartHisto').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Encours initial', data: [], backgroundColor: 'rgba(79,142,247,0.55)', borderRadius: 4 },
+        { label: 'Encours final',   data: [], backgroundColor: 'rgba(16,185,129,0.55)', borderRadius: 4 }
+      ]
+    },
+    options: optBase
+  });
+}
+
+// ==================== GAUGES ====================
+function setGauge(id, pct, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const total = 188.5;
+  el.style.strokeDashoffset = total - (total * Math.min(pct, 100) / 100);
+  el.style.stroke = color;
+}
+
+// ==================== API ====================
+const API_BASE = window.location.origin;
+async function apiFetch(path, opts = {}) {
+  try {
+    const r = await fetch(API_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `HTTP ${r.status}`); }
+    return r.json();
+  } catch (err) {
+    console.error('API error:', path, err.message);
+    throw err;
+  }
+}
+
+// ── KPIs ─────────────────────────────────────────────────
+async function loadKPIs() {
+  try {
+    const d = await apiFetch('/api/credits/stats/kpi');
+    document.getElementById('kpi-encours').textContent = new Intl.NumberFormat('fr-FR').format(Math.round(d.encours_total || 0));
+    document.getElementById('kpi-nb').textContent      = d.nb_credits || 0;
+    document.getElementById('kpi-imp').textContent     = new Intl.NumberFormat('fr-FR').format(Math.round(d.impayes_total || 0));
+    document.getElementById('lastEmg').textContent     = d.dernier_emg ? new Date(d.dernier_emg).toLocaleDateString('fr-FR') : '—';
+
+    if (d.encours_total > 0) {
+      const remb = Math.max(0, Math.min(100, ((d.encours_total - (d.impayes_total||0)) / d.encours_total) * 100));
+      setGauge('gauge-remb', remb, '#10b981');
+      document.getElementById('gauge-remb-val').textContent = remb.toFixed(1) + '%';
+    }
+
+    document.getElementById('kpi-taux-degrad').textContent = 'N/A';
+
+    if (d.repartition_nature && d.repartition_nature.length) {
+      const container = document.getElementById('bar-nature');
+      const max = Math.max(...d.repartition_nature.map(n => parseFloat(n.total || 0)));
+      container.innerHTML = d.repartition_nature.map(n => `
+        <div class="stat-bar-row">
+          <div class="stat-bar-label">${n.nature_credit||'—'}</div>
+          <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${max>0?(parseFloat(n.total)/max*100).toFixed(0):0}%"></div></div>
+          <div class="stat-bar-val">${n.nb} crédits</div>
+        </div>`).join('');
+    }
+
+    // Stop loss depuis KPI
+    if (d.stop_loss_pct) {
+      document.getElementById('stop-loss-label').textContent = `plafond ${d.stop_loss_pct}%`;
+    }
+
+    addLog('OK', `KPIs — ${d.nb_credits} crédits, encours ${new Intl.NumberFormat('fr-FR').format(Math.round(d.encours_total||0))} MGA`);
+  } catch (err) {
+    addLog('ERROR', 'KPIs — ' + err.message);
+  }
+}
+
+// ── Historique ───────────────────────────────────────────
+async function loadHistorique() {
+  try {
+    const rows = await apiFetch('/api/credits/stats/historique');
+    if (!rows.length) return;
+
+    const labels = rows.map(r => `${(r.mois||'').slice(0,3)} ${r.annee}`);
+    if (chartEnc) {
+      chartEnc.data.labels = labels;
+      chartEnc.data.datasets[0].data = rows.map(r => parseFloat(r.final||0));
+      chartEnc.update();
+    }
+    if (chartHist) {
+      chartHist.data.labels = labels;
+      chartHist.data.datasets[0].data = rows.map(r => parseFloat(r.initial||0));
+      chartHist.data.datasets[1].data = rows.map(r => parseFloat(r.final||0));
+      chartHist.update();
+    }
+
+    const tbody = document.getElementById('histBody');
+    if (tbody) {
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td style="font-family:var(--mono);font-size:12px">${r.id_credit||'—'}</td>
+          <td>${r.annee}</td>
+          <td>${r.mois||'—'}</td>
+          <td style="text-align:right;font-family:var(--mono)">${new Intl.NumberFormat('fr-FR').format(parseFloat(r.initial||0))}</td>
+          <td style="text-align:right;font-family:var(--mono)">${new Intl.NumberFormat('fr-FR').format(parseFloat(r.final||0))}</td>
+          <td style="text-align:right">${r.nb_jours_retard||0}</td>
+          <td>${r.date_emg ? new Date(r.date_emg).toLocaleDateString('fr-FR') : '—'}</td>
+        </tr>`).join('');
+      document.getElementById('hist-page-info').textContent = `${rows.length} lignes`;
+    }
+  } catch (err) {
+    addLog('WARN', 'Historique — ' + err.message);
+  }
+}
+
+// ── Crédits F2 ───────────────────────────────────────────
+const pages_state = { f2:{cur:1,total:0}, enc:{cur:1,total:0}, hist:{cur:1,total:0} };
+let allCredits = [];
+let f2CurrentPage = 1;
+const F2_PAGE_SIZE = 50;
+
+function populateObjetFilter(objets) {
+  const sel = document.getElementById('f2-filter-objet');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Tous objets</option>';
+  [...new Set(objets)].sort().forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+function populateNatureSelectFilter(natures) {
+  const sel = document.getElementById('f2-filter-nature');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Toutes natures</option>';
+  [...new Set(natures)].sort().forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+async function loadCredits(page = 1) {
+  f2CurrentPage = page;
+  try {
+    const d = await apiFetch('/api/credits?page=1&limit=9999');
+    allCredits = d.data || [];
+    populateObjetFilter(allCredits.map(c => c.objet_credit).filter(Boolean));
+    populateNatureSelectFilter(allCredits.map(c => c.nature_credit).filter(Boolean));
+    applyCreditsFilter();
+    addLog('OK', `${allCredits.length} crédits chargés`);
+  } catch (err) {
+    addLog('ERROR', 'Crédits — ' + err.message);
+  }
+}
+
+function applyCreditsFilter() {
+  const search = (document.getElementById('f2-search')?.value || '').toLowerCase().trim();
+  const nature = document.getElementById('f2-filter-nature')?.value || '';
+  const objet  = document.getElementById('f2-filter-objet')?.value  || '';
+
+  const filtered = allCredits.filter(c => {
+    if (nature && (c.nature_credit || '') !== nature) return false;
+    if (objet  && (c.objet_credit  || '') !== objet)  return false;
+    if (search) {
+      const hay = [c.id_credit, c.nom_client, c.objet_credit, c.nature_credit].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / F2_PAGE_SIZE));
+  if (f2CurrentPage > totalPages) f2CurrentPage = 1;
+  const start = (f2CurrentPage - 1) * F2_PAGE_SIZE;
+  const page  = filtered.slice(start, start + F2_PAGE_SIZE);
+
+  document.getElementById('f2-page-info').textContent = `${total} crédit${total>1?'s':''} (page ${f2CurrentPage}/${totalPages})`;
+  document.getElementById('f2-page-num').textContent  = f2CurrentPage;
+
+  const tbody = document.getElementById('f2Body');
+  if (!page.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Aucun crédit trouvé</td></tr>';
+    return;
+  }
+  tbody.innerHTML = page.map((c, i) => `
+    <tr style="cursor:default">
+      <td>${start + i + 1}</td>
+      <td style="font-family:var(--mono);font-size:12px">${c.id_credit}</td>
+      <td>${c.nom_client||'—'}</td>
+      <td><span class="pill pill-blue">${c.nature_credit||'—'}</span></td>
+      <td>${c.objet_credit||'—'}</td>
+      <td style="text-align:right;font-family:var(--mono)">${c.montant_credit ? new Intl.NumberFormat('fr-FR').format(c.montant_credit) : '—'}</td>
+      <td>${c.date_ouverture ? new Date(c.date_ouverture).toLocaleDateString('fr-FR') : '—'}</td>
+      <td>${c.date_echeance  ? new Date(c.date_echeance).toLocaleDateString('fr-FR')  : '—'}</td>
+      <td><span class="pill ${getStatutPill(c)}">${getStatut(c)}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="openCreditModal('${c.id_credit.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">✏️ Éditer</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteCredit('${c.id_credit.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+window.changePage = function(type, dir) {
+  if (type === 'f2') {
+    const filtered = allCredits.filter(c => {
+      const nature = document.getElementById('f2-filter-nature')?.value || '';
+      const objet  = document.getElementById('f2-filter-objet')?.value  || '';
+      const search = (document.getElementById('f2-search')?.value || '').toLowerCase();
+      if (nature && (c.nature_credit||'') !== nature) return false;
+      if (objet  && (c.objet_credit ||'') !== objet)  return false;
+      if (search) { const h=[c.id_credit,c.nom_client,c.objet_credit,c.nature_credit].join(' ').toLowerCase(); if(!h.includes(search)) return false; }
+      return true;
+    });
+    const totalPages = Math.max(1, Math.ceil(filtered.length / F2_PAGE_SIZE));
+    f2CurrentPage = Math.max(1, Math.min(totalPages, f2CurrentPage + dir));
+    applyCreditsFilter();
+  } else if (type === 'enc') {
+    pages_state.enc.cur = Math.max(1, pages_state.enc.cur + dir);
+    loadEncours(pages_state.enc.cur);
+  } else if (type === 'hist') {
+    pages_state.hist.cur = Math.max(1, pages_state.hist.cur + dir);
+    loadHistorique(pages_state.hist.cur);
+  }
+};
+
+function getStatut(c) {
+  if (!c.date_echeance) return 'Actif';
+  return new Date(c.date_echeance) < new Date() ? 'Échu' : 'Actif';
+}
+function getStatutPill(c) { return getStatut(c) === 'Échu' ? 'pill-amber' : 'pill-green'; }
+
+// ── Encours ──────────────────────────────────────────────
+async function loadEncours(page = 1) {
+  try {
+    const annee = document.getElementById('enc-filter-annee')?.value || '';
+    const mois  = document.getElementById('enc-filter-mois')?.value  || '';
+    const params = new URLSearchParams({ page, limit: 50 });
+    if (annee) params.set('annee', annee);
+    if (mois)  params.set('mois', mois);
+    const d = await apiFetch(`/api/encours?${params}`);
+
+    document.getElementById('enc-page-info').textContent = `${d.total} lignes`;
+    document.getElementById('enc-page-num').textContent  = page;
+
+    const tbody = document.getElementById('encBody');
+    if (!d.data || !d.data.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">Aucune donnée</td></tr>';
+      return;
+    }
+    window._encoursCache = [];
+    tbody.innerHTML = d.data.map((e, idx) => {
+      const retard = parseInt(e.nb_jours_retard) || 0;
+      let statut, pillClass;
+      if (retard === 0)      { statut = 'OK';     pillClass = 'pill-green'; }
+      else if (retard <= 29) { statut = 'Retard'; pillClass = 'pill-amber'; }
+      else if (retard <= 60) { statut = 'Sup 30'; pillClass = 'pill-red'; }
+      else                   { statut = 'Sup 61'; pillClass = 'pill-red'; }
+      window._encoursCache[idx] = e;
+      return `<tr>
+        <td style="font-family:var(--mono);font-size:12px">${e.id_credit}</td>
+        <td>${e.annee}</td>
+        <td>${e.mois}</td>
+        <td style="text-align:right;font-family:var(--mono)">${e.encours_initial ? new Intl.NumberFormat('fr-FR').format(e.encours_initial) : '—'}</td>
+        <td style="text-align:right;font-family:var(--mono)">${e.encours_final   != null ? new Intl.NumberFormat('fr-FR').format(e.encours_final) : '0'}</td>
+        <td style="text-align:right;font-family:var(--mono)">${e.impayes_capital ? new Intl.NumberFormat('fr-FR').format(e.impayes_capital) : '0'}</td>
+        <td style="text-align:right">${retard}</td>
+        <td><span class="pill ${pillClass}">${statut}</span></td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="openEncoursModal(${idx})">✏️ Éditer</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteEncours('${e.id_credit}',${e.annee},'${e.mois}')">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    addLog('ERROR', 'Encours — ' + err.message);
+  }
+}
+
+// ── Sorties PTF ───────────────────────────────────────────
+// CORRIGÉ : utilise /api/encours/sorties qui retourne les crédits avec encours_final = 0
+async function loadSorties() {
+  try {
+    const d = await apiFetch('/api/encours/sorties');
+    const credits = d.data || [];
+    const badge = document.getElementById('sortie-count-badge');
+    if (badge) badge.textContent = `${credits.length} sorti${credits.length > 1 ? 's' : ''}`;
+
+    document.getElementById('sortieBody').innerHTML = credits.length
+      ? credits.map(c => `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${c.id_credit}</td>
+          <td>${c.nom_client||'—'}</td>
+          <td style="text-align:right;font-family:var(--mono)">${c.montant_credit ? new Intl.NumberFormat('fr-FR').format(c.montant_credit) + ' MGA' : '—'}</td>
+          <td>${c.date_emg ? new Date(c.date_emg).toLocaleDateString('fr-FR') : '—'}</td>
+          <td><span class="pill pill-red">Encours = 0</span></td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">Aucun crédit sorti détecté — tous les encours finaux sont > 0</td></tr>';
+  } catch (err) {
+    addLog('WARN', 'Sorties PTF — ' + err.message);
+  }
+}
+
+// ── Upload import ─────────────────────────────────────────
+async function uploadImport(file, type) {
+  const form = new FormData();
+  form.append('file', file);
+  const statusEl = document.getElementById(`status-${type}`);
+  statusEl.innerHTML = `<div class="status-line"><span>⏳</span> Import en cours…</div>`;
+  addLog('INFO', `Import ${type.toUpperCase()} — ${file.name}`);
+  try {
+    const r = await fetch(`${API_BASE}/api/${type === 'f2' ? 'credits' : 'encours'}/import`, { method: 'POST', body: form });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    statusEl.innerHTML = [
+      `<div class="status-line"><span style="color:var(--green)">✓</span> <strong>${d.fichier}</strong></div>`,
+      `<div class="status-line"><span style="color:var(--green)">✓</span> Insérés : <strong>${d.inseres}</strong></div>`,
+      d.doublons ? `<div class="status-line"><span style="color:var(--muted)">~</span> Doublons : ${d.doublons}</div>` : '',
+      d.rejetes  ? `<div class="status-line"><span style="color:var(--amber)">⚠</span> Rejetés : ${d.rejetes}</div>` : '',
+      d.erreurs?.length ? `<div class="status-line"><span style="color:var(--red)">✗</span> <small>${d.erreurs[0].motif}</small></div>` : '',
+    ].filter(Boolean).join('');
+    showToast('Import réussi', `${d.inseres} lignes importées`, 'ok');
+    addLog('OK', `Import ${type.toUpperCase()} — ${d.inseres} insérés, ${d.doublons||0} doublons, ${d.rejetes||0} rejets`);
+    setTimeout(() => { loadKPIs(); loadHistorique(); if(type==='f2') loadCredits(); else { loadEncours(); loadSorties(); } }, 500);
+  } catch (err) {
+    statusEl.innerHTML = `<div class="status-line"><span style="color:var(--red)">✗</span> ${err.message}</div>`;
+    showToast('Erreur import', err.message, 'error');
+    addLog('ERROR', `Import ${type.toUpperCase()} — ${err.message}`);
+  }
+}
+
+// ── Export ───────────────────────────────────────────────
+window.exportTable = function(name) {
+  const urls = {
+    conventions:     '/api/conventions/export/xlsx',
+    f2_credits:      '/api/credits/export/xlsx',
+    encours_credits: '/api/encours/export/xlsx',
+    exhaustive:      '/api/credits/export/exhaustive',
+    gpp_hebdo:       '/api/credits/export/hebdo',
+    rejets:          '/api/encours/export/xlsx?rejets=1',
+  };
+  const url = urls[name];
+  if (url) { window.open(API_BASE + url, '_blank'); addLog('INFO', `Export ${name}`); }
+  else showToast('Export', `${name} — en développement`, 'info');
+};
+
+// ── Filtres ───────────────────────────────────────────────
+// ── Suppressions ──────────────────────────────────────────
+window.deleteCredit = async function(id_credit) {
+  if (!confirm(`Supprimer définitivement le crédit ${id_credit} ?\n\nSes encours associés seront aussi supprimés.`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/credits/${encodeURIComponent(id_credit)}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    showToast('Crédit supprimé', id_credit, 'ok');
+    addLog('OK', `Crédit supprimé : ${id_credit}`);
+    loadCredits(1);
+  } catch (err) {
+    showToast('Erreur', err.message, 'error');
+    addLog('ERROR', `deleteCredit — ${err.message}`);
+  }
+};
+
+window.deleteEncours = async function(id_credit, annee, mois) {
+  if (!confirm(`Supprimer la ligne encours de ${id_credit} pour ${mois} ${annee} ?`)) return;
+  try {
+    const url = `${API_BASE}/api/encours/${encodeURIComponent(id_credit)}?annee=${annee}&mois=${encodeURIComponent(mois)}`;
+    const r = await fetch(url, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    showToast('Ligne supprimée', `${id_credit} — ${mois} ${annee}`, 'ok');
+    addLog('OK', `Encours supprimé : ${id_credit} ${mois} ${annee}`);
+    loadEncours(pages_state.enc.cur);
+  } catch (err) {
+    showToast('Erreur', err.message, 'error');
+    addLog('ERROR', `deleteEncours — ${err.message}`);
+  }
+};
+
+window.deleteConvention = async function(id_convention) {
+  if (!confirm(`Supprimer cette convention ?\n\nCette action est irréversible.`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/conventions/${id_convention}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    showToast('Convention supprimée', '', 'ok');
+    addLog('OK', `Convention supprimée : id=${id_convention}`);
+    loadConventions();
+  } catch (err) {
+    showToast('Erreur', err.message, 'error');
+    addLog('ERROR', `deleteConvention — ${err.message}`);
+  }
+};
+
+window.filterCredits = function() { applyCreditsFilter(); };
+window.filterEncours = function() { loadEncours(1); };
+
+// ── Anomalies ─────────────────────────────────────────────
+async function loadAnomalies() {
+  try {
+    const d = await apiFetch('/api/credits/anomalies');
+    document.getElementById('rej-f2-count').textContent = d.total || 0;
+    if (d.anomalies && d.anomalies.length) {
+      document.getElementById('rej-last-file').textContent = d.anomalies[0].fichier || '—';
+    }
+    const tbody = document.getElementById('anomaliesBody');
+    tbody.innerHTML = d.anomalies && d.anomalies.length
+      ? d.anomalies.map(a => `<tr>
+          <td style="font-family:var(--mono);font-size:12px">${a.id_credit||'—'}</td>
+          <td style="color:var(--red);max-width:300px;overflow:hidden;text-overflow:ellipsis" title="${a.motif||''}">${a.motif||'—'}</td>
+          <td style="color:var(--muted);font-size:12px">${a.fichier||'—'}</td>
+          <td style="color:var(--muted);font-size:12px">${a.date ? new Date(a.date).toLocaleString('fr-FR') : '—'}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">Aucune anomalie enregistrée</td></tr>';
+  } catch (err) {
+    addLog('WARN', 'Anomalies — ' + err.message);
+  }
+}
+window.clearAnomalies = async function() {
+  if (!confirm('Effacer toutes les anomalies ?')) return;
+  try {
+    await fetch(`${API_BASE}/api/credits/anomalies`, { method: 'DELETE' });
+    loadAnomalies();
+    showToast('Anomalies effacées', '', 'ok');
+    addLog('OK', 'Anomalies effacées');
+  } catch (err) { showToast('Erreur', err.message, 'error'); }
+};
+
+// ── Ouvrir crédit ─────────────────────────────────────────
+window.openCreditModal = async function(id_credit) {
+  document.getElementById('modal-credit-title').textContent = id_credit;
+  document.getElementById('modal-credit-body').innerHTML = '<p style="color:var(--muted);grid-column:1/-1">Chargement…</p>';
+  document.getElementById('modalCredit').classList.add('open');
+  try {
+    const c = await apiFetch(`/api/credits/${encodeURIComponent(id_credit)}`);
+    const fld = (label, key, type='text', readOnly=false) => `
+      <div class="form-group">
+        <label>${label}</label>
+        <input type="${type}" id="cedit-${key}" value="${(c[key]||'').toString().replace(/"/g,'&quot;')}" ${readOnly ? 'readonly style="opacity:0.6"' : ''}>
+      </div>`;
+    document.getElementById('modal-credit-body').innerHTML = `
+      ${fld('ID Crédit','id_credit','text',true)}
+      ${fld('N° Compte','numero_compte')}
+      ${fld('Nom client','nom_client')}
+      ${fld('Genre','genre')}
+      ${fld('Secteur activité','secteur_activite')}
+      ${fld('Chiffre d\'affaires','chiffre_affaires','number')}
+      ${fld('Type entreprise','type_entreprise')}
+      ${fld('Région','region')}
+      ${fld('Ancienneté','anciennete')}
+      ${fld('Nature crédit','nature_credit')}
+      ${fld('Type crédit','type_credit')}
+      ${fld('Objet crédit','objet_credit')}
+      ${fld('Montant (MGA)','montant_credit','number')}
+      ${fld('Taux intérêt (%)','taux_interet','number')}
+      ${fld('Date ouverture','date_ouverture','date')}
+      ${fld('Date échéance','date_echeance','date')}
+      <div class="form-group" style="grid-column:1/-1;background:rgba(79,142,247,0.06);border-radius:8px;padding:12px">
+        <label style="color:var(--accent)">Encours actuel</label>
+        <div style="display:flex;gap:24px;margin-top:8px;font-family:var(--mono);font-size:13px;flex-wrap:wrap">
+          <span>Final : <strong>${c.encours_final ? new Intl.NumberFormat('fr-FR').format(c.encours_final) + ' MGA' : '—'}</strong></span>
+          <span>Impayés : <strong style="color:var(--red)">${c.impayes_capital ? new Intl.NumberFormat('fr-FR').format(c.impayes_capital) + ' MGA' : '0'}</strong></span>
+          <span>Retard : <strong>${c.nb_jours_retard || 0} j</strong></span>
+        </div>
+      </div>`;
+    document.getElementById('btn-save-credit').dataset.id = id_credit;
+  } catch (err) {
+    document.getElementById('modal-credit-body').innerHTML = `<p style="color:var(--red);grid-column:1/-1">Erreur : ${err.message}</p>`;
+  }
+};
+
+// ── Sauvegarder crédit — avec affichage erreur convention ─
+window.saveCredit = async function() {
+  const id  = document.getElementById('btn-save-credit').dataset.id;
+  const val = k => document.getElementById('cedit-'+k)?.value || '';
+
+  let errEl = document.getElementById('credit-save-error');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.id = 'credit-save-error';
+    errEl.style.cssText = 'display:none;grid-column:1/-1;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:8px;padding:12px;color:var(--red);font-size:13px;margin-top:4px;line-height:1.5';
+    document.getElementById('modal-credit-body').appendChild(errEl);
+  }
+  errEl.style.display = 'none';
+
+  try {
+    const r = await fetch(`${API_BASE}/api/credits/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom_client: val('nom_client'), numero_compte: val('numero_compte'),
+        secteur_activite: val('secteur_activite'), chiffre_affaires: val('chiffre_affaires'),
+        type_entreprise: val('type_entreprise'), region: val('region'),
+        anciennete: val('anciennete'), nature_credit: val('nature_credit'),
+        type_credit: val('type_credit'), objet_credit: val('objet_credit'),
+        montant_credit: val('montant_credit'), taux_interet: val('taux_interet'),
+        date_ouverture: val('date_ouverture'), date_echeance: val('date_echeance')
+      })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      // Afficher l'erreur convention dans le modal — bloque la sauvegarde
+      errEl.textContent = d.error || `Erreur HTTP ${r.status}`;
+      errEl.style.display = 'block';
+      showToast('Modification refusée', d.error?.substring(0, 80) || 'Violation convention', 'error');
+      return;
+    }
+    showToast('Crédit mis à jour', id, 'ok');
+    addLog('OK', `Crédit modifié : ${id}`);
+    closeModal('modalCredit');
+    loadCredits(1);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+};
+
+// ── Lettre ────────────────────────────────────────────────
+window.openLetterModal = function(type) {
+  const titles = { f3:'Lettre F3 — Attestation de garantie', ptf:'Lettre Niveau PTF — Stop Loss', sortie:'Lettre de sortie PTF' };
+  document.getElementById('modal-letter-title').textContent = titles[type] || 'Lettre';
+  document.getElementById('modal-letter-body').innerHTML = `
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Renseignez les destinataires puis générez la lettre Word automatiquement.</p>
+    <div class="form-group" style="margin-bottom:12px"><label>Référence lettre</label><input id="l-ref" type="text" placeholder="Ex: /01-2026"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date de la lettre</label><input id="l-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="form-group"><label>Date de fin / période</label><input id="l-datefin" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px"><label>Nom destinataire</label><input id="l-nom" type="text" placeholder="Ex: Monsieur RAKOTO Jean"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>Titre / Fonction</label><input id="l-titre" type="text" placeholder="Ex: Directeur des Risques"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>Organisation</label><input id="l-org" type="text" placeholder="Ex: PAMF Madagascar"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Adresse</label><input id="l-adresse" type="text" placeholder="Rue, quartier"></div>
+      <div class="form-group"><label>Ville</label><input id="l-cp" type="text" value="Antananarivo 101"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal('modalLetter')">Annuler</button>
+      <button class="btn btn-primary" onclick="genererLettre('${type}')">📄 Générer .docx</button>
+    </div>`;
+  document.getElementById('modalLetter').classList.add('open');
+};
+
+window.genererLettre = async function(type) {
+  const body = {
+    ref: document.getElementById('l-ref').value,
+    dateLettre: new Date(document.getElementById('l-date').value).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}),
+    dateFin:    new Date(document.getElementById('l-datefin').value).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}),
+    destinataire: {
+      nom:     document.getElementById('l-nom').value,
+      titre:   document.getElementById('l-titre').value,
+      org:     document.getElementById('l-org').value,
+      adresse: document.getElementById('l-adresse').value,
+      cp:      document.getElementById('l-cp').value,
+    }
+  };
+  showToast('Génération…', 'Création du document Word en cours', 'info');
+  try {
+    const r = await fetch(`${API_BASE}/api/lettres/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.error); }
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const cd   = r.headers.get('Content-Disposition') || '';
+    a.href     = url;
+    a.download = cd.match(/filename="(.+)"/)?.[1] || `lettre_${type}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Lettre générée ✅', a.download, 'ok');
+    addLog('OK', `Lettre ${type.toUpperCase()} générée — ${a.download}`);
+    closeModal('modalLetter');
+  } catch (err) {
+    showToast('Erreur', err.message, 'error');
+    addLog('ERROR', `Lettre ${type.toUpperCase()} — ${err.message}`);
+  }
+};
+
+// ── Encours modal édition ─────────────────────────────────
+window.openEncoursModal = function(idx) {
+  const e = (window._encoursCache || [])[idx];
+  if (!e) { showToast('Erreur', 'Données introuvables', 'error'); return; }
+
+  document.getElementById('modal-encours-title').textContent = e.id_credit;
+  document.getElementById('modal-encours-subtitle').textContent = `Période : ${e.mois || '—'} ${e.annee || '—'}`;
+
+  const toDateVal = v => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (isNaN(d)) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
+  const fld = (label, key, type='number', readOnly=false, dateVal=null) => `
+    <div class="form-group">
+      <label>${label}</label>
+      <input type="${type}" id="eenc-${key}"
+        value="${dateVal !== null ? dateVal : (e[key] != null ? e[key] : '')}"
+        ${readOnly ? 'readonly style="opacity:0.6"' : ''}>
+    </div>`;
+
+  document.getElementById('modal-encours-body').innerHTML = `
+    ${fld('ID Crédit',             'id_credit',       'text',   true)}
+    ${fld('Date EMG',              'date_emg',         'date',  false, toDateVal(e.date_emg))}
+    ${fld('Encours initial (MGA)', 'encours_initial', 'number')}
+    ${fld('Encours final (MGA)',   'encours_final',   'number')}
+    ${fld('Impayés capital (MGA)', 'impayes_capital', 'number')}
+    ${fld('Impayés intérêts (MGA)','impayes_interets','number')}
+    ${fld('Nb jours retard',       'nb_jours_retard', 'number')}
+    ${fld('Année',                 'annee',            'number')}
+    ${fld('Mois',                  'mois',             'text')}
+    <div id="encours-error" style="display:none;grid-column:1/-1;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;color:var(--red);font-size:13px;line-height:1.5;white-space:pre-wrap"></div>
+  `;
+
+  document.getElementById('btn-save-encours').dataset.idx = idx;
+  document.getElementById('modalEncours').classList.add('open');
+};
+
+window.saveEncours = async function() {
+  const btn = document.getElementById('btn-save-encours');
+  const idx = parseInt(btn.dataset.idx);
+  const orig = (window._encoursCache || [])[idx] || {};
+  const errEl = document.getElementById('encours-error');
+  errEl.style.display = 'none';
+
+  const val = k => { const el = document.getElementById('eenc-'+k); return el ? el.value : ''; };
+  const id  = val('id_credit') || orig.id_credit;
+
+  const body = {
+    date_emg:         val('date_emg')         || orig.date_emg || null,
+    encours_initial:  parseFloat(val('encours_initial'))  || 0,
+    encours_final:    parseFloat(val('encours_final'))    || 0,
+    impayes_capital:  parseFloat(val('impayes_capital'))  || 0,
+    impayes_interets: parseFloat(val('impayes_interets')) || 0,
+    nb_jours_retard:  parseInt(val('nb_jours_retard'))    || 0,
+    annee:            parseInt(val('annee'))               || orig.annee,
+    mois:             val('mois')              || orig.mois || '',
+  };
+
+  try {
+    btn.disabled = true;
+    btn.textContent = '⏳ Enregistrement…';
+
+    const r = await fetch(`${API_BASE}/api/encours/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const text = await r.text();
+    let parsed = {};
+    try { parsed = JSON.parse(text); } catch(_) {}
+
+    if (!r.ok) {
+      const msg = parsed.error || parsed.message || text || `HTTP ${r.status}`;
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      showToast('Modification refusée', msg.substring(0, 80), 'error');
+      addLog('ERROR', `saveEncours ${id} — ${msg}`);
+      return;
+    }
+
+    closeModal('modalEncours');
+    showToast('Encours mis à jour', id, 'ok');
+    addLog('OK', `Encours ${id} — mis à jour`);
+    loadEncours(pages_state.enc.cur);
+    loadSorties(); // Rafraîchir les sorties PTF
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    addLog('ERROR', 'saveEncours — ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Enregistrer';
+  }
+};
+
+// ── Recherche globale ─────────────────────────────────────
+document.getElementById('globalSearch').addEventListener('input', async function() {
+  const q = this.value.trim();
+  const box = document.getElementById('searchResults');
+  if (q.length < 2) { box.classList.remove('open'); return; }
+  try {
+    const d = await apiFetch(`/api/credits?search=${encodeURIComponent(q)}&limit=8`);
+    if (!d.data || !d.data.length) { box.classList.remove('open'); return; }
+    box.innerHTML = d.data.map(c => `
+      <div class="search-result-item" onclick="goto('credits');openCreditModal('${c.id_credit.replace(/'/g,"\\'")}');document.getElementById('globalSearch').value='';document.getElementById('searchResults').classList.remove('open')">
+        <div class="sr-label">Crédit</div>
+        <div class="sr-val">${c.id_credit} — ${c.nom_client||'—'}</div>
+      </div>`).join('');
+    box.classList.add('open');
+  } catch (_) {}
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('open');
+});
+
+// ── Navigation avec rechargement des données ──────────────
+const _goto = window.goto;
+window.goto = function(id) {
+  _goto(id);
+  if (id === 'credits')    loadCredits(1);
+  if (id === 'encours')    loadEncours(1);
+  if (id === 'historique') loadHistorique();
+  if (id === 'lettres')    loadSorties();
+  if (id === 'anomalies')  loadAnomalies();
+  if (id === 'conventions') loadConventions();
+};
+
+// ── Conventions : charger depuis API ─────────────────────
+async function loadConventions() {
+  try {
+    const d = await apiFetch('/api/conventions');
+    // d est un tableau directement (pas d.data)
+    const rows = Array.isArray(d) ? d : (d.data || []);
+    window._convCache = rows;
+
+    // Badge topbar
+    if (rows.length) {
+      const conv = rows[0];
+      document.getElementById('badge-convention').innerHTML = `IFP : <strong>${conv.nom_ifp}</strong> — ${conv.id_gpp}`;
+      document.getElementById('stop-loss-label').textContent = `plafond ${conv.stop_loss_pct || 30}%`;
+    }
+
+    const tbody = document.getElementById('convBody');
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">Aucune convention — créez-en une ci-dessous</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((c, i) => `
+      <tr>
+        <td><strong>${c.nom_ifp}</strong></td>
+        <td><span class="pill pill-blue">${c.id_gpp}</span></td>
+        <td>${c.quotite_garantie || '—'}%</td>
+        <td>${c.stop_loss_pct || '—'}%</td>
+        <td style="font-family:var(--mono)">${c.montant_min ? new Intl.NumberFormat('fr-FR').format(c.montant_min) : '—'}</td>
+        <td style="font-family:var(--mono)">${c.montant_max ? new Intl.NumberFormat('fr-FR').format(c.montant_max) : '—'}</td>
+        <td>${c.duree_max_jours || '—'} j</td>
+        <td style="font-family:var(--mono)">${c.plafond_encours ? new Intl.NumberFormat('fr-FR').format(c.plafond_encours) : '—'}</td>
+        <td>${c.date_signature_fmt || c.date_signature || '—'}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="editConv(${i})">✏️ Modifier</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteConvention(${c.id_convention})">🗑</button>
+        </td>
+      </tr>`).join('');
+  } catch (err) {
+    addLog('WARN', 'Conventions — ' + err.message);
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  initCharts();
+  addLog('OK', 'Interface GPP chargée');
+  showToast('GPP Fonds', 'Interface prête — connexion API en cours…', 'info');
+  await loadKPIs();
+  await loadHistorique();
+  await loadConventions();
+  loadSorties();
+  addLog('OK', `API connectée — ${API_BASE}`);
+});
+</script>
+</body>
+</html>
