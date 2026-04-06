@@ -2145,21 +2145,30 @@ async function loadUsers() {
     const tbody = document.getElementById('users-tbody');
     if (!tbody) return;
     const currentUser = getUser();
-    tbody.innerHTML = users.map(u => `
-      <tr>
-        <td style="font-weight:500">${u.username}</td>
-        <td style="color:var(--muted)">${u.email}</td>
-        <td><span class="role-badge-${u.role}">${u.role === 'admin' ? '👑 Admin' : '👤 Opérateur'}</span></td>
-        <td><span class="${u.actif ? 'status-active' : 'status-inactive'}">${u.actif ? '✓ Actif' : '✗ Inactif'}</span></td>
-        <td style="color:var(--muted);font-size:12px">${u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—'}</td>
-        <td style="display:flex;gap:4px">
-          <button class="btn btn-ghost btn-sm" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
-          ${u.id !== currentUser.id ? '<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser('+u.id+',''+u.username+'')">🗑</button>' : '<span style="color:var(--muted);font-size:11px;padding:5px 8px">vous</span>'}
-        </td>
-      </tr>`).join('');
+    let html = '';
+    users.forEach(function(u) {
+      const roleLabel = u.role === 'admin' ? '👑 Admin' : '👤 Opérateur';
+      const roleClass = 'role-badge-' + u.role;
+      const statusClass = u.actif ? 'status-active' : 'status-inactive';
+      const statusLabel = u.actif ? '✓ Actif' : '✗ Inactif';
+      const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—';
+      const userJson = JSON.stringify(u).replace(/"/g, '&quot;');
+      const actionBtn = u.id !== currentUser.id
+        ? '<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser(' + u.id + ',\'' + u.username + '\')">🗑</button>'
+        : '<span style="color:var(--muted);font-size:11px;padding:5px 8px">vous</span>';
+      html += '<tr>';
+      html += '<td style="font-weight:500">' + u.username + '</td>';
+      html += '<td style="color:var(--muted)">' + u.email + '</td>';
+      html += '<td><span class="' + roleClass + '">' + roleLabel + '</span></td>';
+      html += '<td><span class="' + statusClass + '">' + statusLabel + '</span></td>';
+      html += '<td style="color:var(--muted);font-size:12px">' + dateStr + '</td>';
+      html += '<td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="editUser(' + userJson + ')">✏️</button>' + actionBtn + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
   } catch (err) {
     const tbody = document.getElementById('users-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">'+err.message+'</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">' + err.message + '</td></tr>';
   }
 }
 
