@@ -54,4 +54,48 @@ router.get('/me', (req, res) => {
   }
 });
 
+// POST /api/auth/change-password — changer son propre mot de passe
+router.post('/change-password', async (req, res) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer '))
+    return res.status(401).json({ error: 'Non authentifié' });
+
+  let decoded;
+  try {
+    decoded = jwt.verify(header.split(' ')[1], SECRET);
+  } catch {
+    return res.status(401).json({ error: 'Token invalide ou expiré' });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ error: 'Mot de passe actuel et nouveau requis' });
+  if (newPassword.length < 6)
+    return res.status(400).json({ error: 'Le nouveau mot de passe doit faire au moins 6 caractères' });
+
+  try {
+    const r = await query(
+      `SELECT * FROM gpp_exhaustives.users WHERE id = $1`,
+      [decoded.id]
+    );
+    if (!r.rows.length)
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    const user  = r.rows[0];
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid)
+      return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await query(
+      `UPDATE gpp_exhaustives.users SET password = $1 WHERE id = $2`,
+      [hashed, decoded.id]
+    );
+
+    res.json({ message: 'Mot de passe changé avec succès' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

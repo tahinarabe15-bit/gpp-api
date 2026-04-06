@@ -336,6 +336,61 @@
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── LOGIN PAGE ── */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: linear-gradient(135deg, #0d1117 0%, #161b27 50%, #1d2438 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 44px 40px; width: 380px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo .llogo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 14px;
+    box-shadow: 0 4px 16px rgba(79,142,247,0.4);
+  }
+  .login-logo h2 { font-size: 20px; font-weight: 600; color: var(--text); }
+  .login-logo p  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .login-field { margin-bottom: 16px; }
+  .login-field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+  .login-field input {
+    width: 100%; padding: 11px 14px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: var(--font); font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-field input:focus { border-color: var(--accent); }
+  .btn-login {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; border: none; border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; transition: filter 0.2s;
+    box-shadow: 0 4px 16px rgba(79,142,247,0.3);
+  }
+  .btn-login:hover { filter: brightness(1.1); }
+  .login-error {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    color: var(--red); font-size: 13px; margin-top: 12px; display: none;
+  }
+  .admin-only { display: none; }
+  body.is-admin .admin-only { display: flex !important; }
+  .role-badge-admin { background: rgba(124,58,237,0.15); color: #a78bfa; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .role-badge-operateur { background: rgba(79,142,247,0.12); color: var(--accent); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .status-active { background: rgba(16,185,129,0.12); color: #34d399; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+  .status-inactive { background: rgba(239,68,68,0.12); color: #f87171; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+  .user-form { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
 </style>
 </head>
 <body>
@@ -354,7 +409,11 @@
     </div>
     <div class="topbar-right">
       <div class="badge-ifp" id="badge-convention">IFP : <strong>—</strong></div>
-      <div class="avatar" onclick="showToast('Profil','Fonctionnalité à venir','info')">AD</div>
+      <div style='display:flex;align-items:center;gap:10px'>
+      <span id='topbar-username' style='font-size:12px;color:var(--muted)'></span>
+      <div class='avatar' id='user-avatar-btn' onclick='showUserMenu()' title='Mon compte'>AD</div>
+      <button class='btn btn-ghost btn-sm' onclick='logout()' title='Déconnexion' style='padding:5px 8px;font-size:13px'>⏻</button>
+    </div>
     </div>
   </header>
 
@@ -405,6 +464,10 @@
     <button class="nav-item" onclick="goto('journal')">
       <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Journal
+    </button>
+    <button class="nav-item admin-only" onclick="goto('admin-users')" style="display:none">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Utilisateurs
     </button>
   </nav>
 
@@ -1804,17 +1867,7 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('open');
 });
 
-// ── Navigation avec rechargement des données ──────────────
-const _goto = window.goto;
-window.goto = function(id) {
-  _goto(id);
-  if (id === 'credits')    loadCredits(1);
-  if (id === 'encours')    loadEncours(1);
-  if (id === 'historique') loadHistorique();
-  if (id === 'lettres')    loadSorties();
-  if (id === 'anomalies')  loadAnomalies();
-  if (id === 'conventions') loadConventions();
-};
+// (goto handled by auth system below)
 
 // ── Conventions : charger depuis API ─────────────────────
 async function loadConventions() {
@@ -1858,17 +1911,414 @@ async function loadConventions() {
   }
 }
 
-// ── Init ──────────────────────────────────────────────────
+// (init handled by auth system below)
+</script>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="llogo">G</div>
+      <h2>GPP Fonds</h2>
+      <p>Connectez-vous pour accéder au tableau de bord</p>
+    </div>
+    <div class="login-field">
+      <label>Nom d'utilisateur</label>
+      <input type="text" id="login-username" placeholder="Votre identifiant" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN USERS PAGE (injected into main) -->
+<script>
+// Inject admin page into PAGES list
+document.addEventListener('DOMContentLoaded', function() {
+  // Add page to main
+  const main = document.querySelector('.main');
+  if (main) {
+    const adminSection = document.createElement('section');
+    adminSection.className = 'page';
+    adminSection.id = 'page-admin-users';
+    adminSection.innerHTML = `
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Gestion des utilisateurs</h1>
+          <p>Créez et gérez les comptes d'accès au dashboard</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showAddUserForm()">+ Nouvel utilisateur</button>
+      </div>
+
+      <!-- Formulaire création/édition -->
+      <div class="user-form" id="user-form-panel" style="display:none">
+        <div style="font-size:14px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+          👤 <span id="user-form-title">Nouvel utilisateur</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="form-group"><label>Nom d'utilisateur *</label><input type="text" id="uf-username" placeholder="ex: marie_dupont"></div>
+          <div class="form-group"><label>Email *</label><input type="email" id="uf-email" placeholder="marie@pamf.mg"></div>
+          <div class="form-group"><label>Mot de passe *</label><input type="password" id="uf-password" placeholder="Laisser vide pour ne pas changer"></div>
+          <div class="form-group">
+            <label>Rôle</label>
+            <select id="uf-role" class="filter-select" style="width:100%">
+              <option value="operateur">Opérateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select id="uf-actif" class="filter-select" style="width:100%">
+              <option value="true">Actif</option>
+              <option value="false">Inactif</option>
+            </select>
+          </div>
+        </div>
+        <div id="uf-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveUser()">💾 Enregistrer</button>
+          <button class="btn btn-ghost" onclick="hideUserForm()">Annuler</button>
+        </div>
+      </div>
+
+      <!-- Table utilisateurs -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Comptes enregistrés</h3>
+          <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Actualiser</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Créé le</th><th>Actions</th></tr></thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    main.appendChild(adminSection);
+  }
+
+  // Register admin page in PAGES array
+  if (window.PAGES) window.PAGES.push('admin-users');
+});
+
+
+// ==================== AUTH SYSTEM ====================
+const TOKEN_KEY = 'gpp_token';
+const USER_KEY  = 'gpp_user';
+
+// Override apiFetch to include auth token
+const _apiFetchOrig = apiFetch;
+async function apiFetch(path, opts = {}) {
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const r = await fetch(API_BASE + path, { ...opts, headers });
+    if (r.status === 401) { logout(); return; }
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || 'HTTP ' + r.status); }
+    return r.json();
+  } catch (err) {
+    if (err.message !== 'Failed to fetch') console.error('API error:', path, err.message);
+    throw err;
+  }
+}
+
+function getToken()   { return sessionStorage.getItem(TOKEN_KEY); }
+function getUser()    { try { return JSON.parse(sessionStorage.getItem(USER_KEY) || '{}'); } catch { return {}; } }
+function isLoggedIn() { return !!getToken(); }
+function isAdmin()    { return getUser().role === 'admin'; }
+
+function setSession(token, user) {
+  sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+function clearSession() {
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+}
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  const user = getUser();
+  const initials = (user.username || 'U').slice(0,2).toUpperCase();
+  const avatarEl = document.getElementById('user-avatar-btn');
+  if (avatarEl) avatarEl.textContent = initials;
+  const nameEl = document.getElementById('topbar-username');
+  if (nameEl) nameEl.textContent = user.username || '';
+  if (isAdmin()) document.body.classList.add('is-admin');
+  else document.body.classList.remove('is-admin');
+  // Show admin nav items
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin() ? 'flex' : 'none';
+  });
+}
+
+function showLoginPage() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent = 'Remplissez tous les champs.'; errEl.style.display = 'block'; return; }
+  btn.textContent = 'Connexion…'; btn.disabled = true;
+  try {
+    const r = await fetch(API_BASE + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || d.message || 'Identifiants incorrects');
+    setSession(d.token, d.user);
+    showApp();
+    addLog('OK', 'Connexion — ' + username);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    addLog('ERROR', 'Login failed — ' + err.message);
+  } finally {
+    btn.textContent = 'Se connecter'; btn.disabled = false;
+  }
+}
+
+function logout() {
+  clearSession();
+  showLoginPage();
+  showToast('Déconnecté', 'À bientôt !', 'info');
+  addLog('INFO', 'Déconnexion');
+}
+
+function showUserMenu() {
+  const user = getUser();
+  if (isAdmin()) {
+    if (confirm('Se déconnecter ?
+
+Cliquez Annuler pour accéder aux options.')) logout();
+  } else {
+    document.getElementById('modalChangePassword').classList.add('open');
+  }
+}
+
+async function changePassword() {
+  const current = document.getElementById('cp-current').value;
+  const newpwd  = document.getElementById('cp-new').value;
+  const errEl   = document.getElementById('cp-error');
+  errEl.style.display = 'none';
+  if (!current || !newpwd) { errEl.textContent = 'Remplissez tous les champs.'; errEl.style.display = 'block'; return; }
+  try {
+    const token = getToken();
+    const r = await fetch(API_BASE + '/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ currentPassword: current, newPassword: newpwd })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erreur');
+    closeModal('modalChangePassword');
+    showToast('Mot de passe changé', 'Reconnectez-vous avec le nouveau MDP', 'ok');
+    setTimeout(logout, 2000);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+// ==================== ADMIN — USERS ====================
+let editingUserId = null;
+
+async function loadUsers() {
+  try {
+    const d = await apiFetch('/api/users');
+    const users = d.users || d || [];
+    const tbody = document.getElementById('users-tbody');
+    if (!tbody) return;
+    const currentUser = getUser();
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td style="font-weight:500">${u.username}</td>
+        <td style="color:var(--muted)">${u.email}</td>
+        <td><span class="role-badge-${u.role}">${u.role === 'admin' ? '👑 Admin' : '👤 Opérateur'}</span></td>
+        <td><span class="${u.actif ? 'status-active' : 'status-inactive'}">${u.actif ? '✓ Actif' : '✗ Inactif'}</span></td>
+        <td style="color:var(--muted);font-size:12px">${u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—'}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">✏️</button>
+          ${u.id !== currentUser.id ? '<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser('+u.id+',''+u.username+'')">🗑</button>' : '<span style="color:var(--muted);font-size:11px;padding:5px 8px">vous</span>'}
+        </td>
+      </tr>`).join('');
+  } catch (err) {
+    const tbody = document.getElementById('users-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">'+err.message+'</td></tr>';
+  }
+}
+
+function showAddUserForm() {
+  editingUserId = null;
+  document.getElementById('user-form-title').textContent = 'Nouvel utilisateur';
+  document.getElementById('uf-username').value = '';
+  document.getElementById('uf-email').value    = '';
+  document.getElementById('uf-password').value = '';
+  document.getElementById('uf-role').value     = 'operateur';
+  document.getElementById('uf-actif').value    = 'true';
+  document.getElementById('uf-error').style.display = 'none';
+  document.getElementById('user-form-panel').style.display = 'block';
+  document.getElementById('uf-password').placeholder = 'Mot de passe obligatoire';
+}
+
+function editUser(u) {
+  if (typeof u === 'string') { try { u = JSON.parse(u); } catch { return; } }
+  editingUserId = u.id;
+  document.getElementById('user-form-title').textContent = 'Modifier — ' + u.username;
+  document.getElementById('uf-username').value = u.username || '';
+  document.getElementById('uf-email').value    = u.email    || '';
+  document.getElementById('uf-password').value = '';
+  document.getElementById('uf-role').value     = u.role     || 'operateur';
+  document.getElementById('uf-actif').value    = String(u.actif !== false);
+  document.getElementById('uf-error').style.display = 'none';
+  document.getElementById('user-form-panel').style.display = 'block';
+  document.getElementById('uf-password').placeholder = 'Laisser vide pour ne pas changer';
+  document.getElementById('user-form-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideUserForm() {
+  document.getElementById('user-form-panel').style.display = 'none';
+  editingUserId = null;
+}
+
+async function saveUser() {
+  const errEl = document.getElementById('uf-error');
+  errEl.style.display = 'none';
+  const username = document.getElementById('uf-username').value.trim();
+  const email    = document.getElementById('uf-email').value.trim();
+  const password = document.getElementById('uf-password').value;
+  const role     = document.getElementById('uf-role').value;
+  const actif    = document.getElementById('uf-actif').value === 'true';
+
+  if (!username || !email) { errEl.textContent = 'Nom et email sont obligatoires.'; errEl.style.display = 'block'; return; }
+  if (!editingUserId && !password) { errEl.textContent = 'Le mot de passe est obligatoire pour un nouvel utilisateur.'; errEl.style.display = 'block'; return; }
+
+  try {
+    const body = { username, email, role, actif };
+    if (password) body.password = password;
+
+    let r;
+    if (editingUserId) {
+      r = await fetch(API_BASE + '/api/users/' + editingUserId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(body)
+      });
+    } else {
+      r = await fetch(API_BASE + '/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify(body)
+      });
+    }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erreur');
+    hideUserForm();
+    showToast(editingUserId ? 'Utilisateur modifié' : 'Utilisateur créé', username, 'ok');
+    addLog('OK', (editingUserId ? 'Modif' : 'Création') + ' utilisateur : ' + username);
+    loadUsers();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteUser(id, username) {
+  if (!confirm('Supprimer l\'utilisateur ' + username + ' ?')) return;
+  try {
+    const r = await fetch(API_BASE + '/api/users/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erreur');
+    showToast('Utilisateur supprimé', username, 'ok');
+    addLog('OK', 'Suppression utilisateur : ' + username);
+    loadUsers();
+  } catch (err) {
+    showToast('Erreur', err.message, 'error');
+  }
+}
+
+// Override goto to handle admin page
+const _gotoOrig = window.goto;
+window.goto = function(id) {
+  if (id === 'admin-users') {
+    if (!isAdmin()) { showToast('Accès refusé', 'Page réservée aux administrateurs', 'error'); return; }
+    // Make sure page-admin-users is in PAGES
+    if (window.PAGES && !window.PAGES.includes('admin-users')) window.PAGES.push('admin-users');
+    _gotoOrig(id);
+    loadUsers();
+    return;
+  }
+  _gotoOrig(id);
+  if (id === 'credits')    loadCredits(1);
+  if (id === 'encours')    loadEncours(1);
+  if (id === 'historique') loadHistorique();
+  if (id === 'lettres')    loadSorties();
+  if (id === 'anomalies')  loadAnomalies();
+  if (id === 'conventions') loadConventions();
+};
+
+// ==================== INIT ====================
 window.addEventListener('load', async () => {
+  // Check if already logged in (session)
+  if (!isLoggedIn()) {
+    showLoginPage();
+    return;
+  }
+  showApp();
   initCharts();
-  addLog('OK', 'Interface GPP chargée');
-  showToast('GPP Fonds', 'Interface prête — connexion API en cours…', 'info');
+  addLog('OK', 'Interface GPP chargée — session restaurée');
+  showToast('GPP Fonds', 'Connexion en cours…', 'info');
   await loadKPIs();
   await loadHistorique();
   await loadConventions();
   loadSorties();
-  addLog('OK', `API connectée — ${API_BASE}`);
+  addLog('OK', 'API connectée — ' + API_BASE);
 });
+
 </script>
+
+<!-- MODAL CHANGEMENT MOT DE PASSE -->
+<div class="modal-overlay" id="modalChangePassword">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2>Changer mon mot de passe</h2>
+      <button class="modal-close" onclick="closeModal('modalChangePassword')">×</button>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="cp-current" class="form-group input" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;width:100%;outline:none">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="cp-new" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;width:100%;outline:none">
+    </div>
+    <div id="cp-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px;color:var(--red);font-size:13px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal('modalChangePassword')">Annuler</button>
+      <button class="btn btn-primary" onclick="changePassword()">Changer</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
