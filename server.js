@@ -91,5 +91,11 @@ app.listen(PORT, () => {
       console.error('⚠️  PostgreSQL connexion échouée (le serveur reste actif):', err.message);
     });
 });
-
+// Keepalive DB — évite la mise en veille Neon
+setInterval(async () => {
+  try {
+    const { pool } = require('./db');
+    await pool.query('SELECT 1');
+  } catch(e) {}
+}, 4 * 60 * 1000); // toutes les 4 minutes
 module.exports = app;
