@@ -45,7 +45,21 @@ try {
   console.error('❌ lettres:', e.message);
   process.exit(1);
 }
+try {
+  app.use('/api/auth', require('./routes/auth'));
+  console.log('✅ Route auth chargée');
+} catch(e) {
+  console.error('❌ auth:', e.message);
+  process.exit(1);
+}
 
+try {
+  app.use('/api/users', require('./routes/users'));
+  console.log('✅ Route users chargée');
+} catch(e) {
+  console.error('❌ users:', e.message);
+  process.exit(1);
+}
 // ── Route santé ───────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
