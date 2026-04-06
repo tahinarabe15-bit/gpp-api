@@ -2105,9 +2105,7 @@ function logout() {
 function showUserMenu() {
   const user = getUser();
   if (isAdmin()) {
-    if (confirm('Se déconnecter ?
-
-Cliquez Annuler pour accéder aux options.')) logout();
+    if (confirm('Se déconnecter ? Cliquez Annuler pour accéder aux options.')) logout();
   } else {
     document.getElementById('modalChangePassword').classList.add('open');
   }
@@ -2241,7 +2239,7 @@ async function saveUser() {
 }
 
 async function deleteUser(id, username) {
-  if (!confirm('Supprimer l\'utilisateur ' + username + ' ?')) return;
+  if (!confirm('Supprimer cet utilisateur : ' + username + ' ?')) return;
   try {
     const r = await fetch(API_BASE + '/api/users/' + id, {
       method: 'DELETE',
