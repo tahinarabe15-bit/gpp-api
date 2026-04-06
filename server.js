@@ -57,29 +57,39 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ── Gestionnaire d'erreurs global ─────────────────────────
 app.use((err, req, res, next) => {
   console.error('Erreur non gérée:', err);
   res.status(500).json({ error: err.message });
 });
 
+// ── Démarrage du serveur ───────────────────────────────────
+// PORT fourni par la plateforme cloud (Render, Railway…) ou 3000 en local
 const PORT = process.env.PORT || 3000;
-const { pool } = require('./db');
 
-pool.connect()
-  .then(client => {
-    client.release();
-    console.log(`✅ PostgreSQL connecté — ${process.env.DB_HOST}:${process.env.DB_PORT||5432}/${process.env.DB_NAME}`);
-  })
-  .catch(err => console.error('❌ PostgreSQL connexion échouée:', err.message));
-
+// On démarre le serveur IMMÉDIATEMENT (requis par Render qui surveille le port)
+// Le test de connexion DB se fait en arrière-plan, sans bloquer
 app.listen(PORT, () => {
   console.log('\n🚀 API GPP Fonds démarrée');
-  console.log(`   → Dashboard : http://localhost:${PORT}`);
-  console.log(`   → API santé : http://localhost:${PORT}/api/health`);
-  console.log(`   → Crédits  : http://localhost:${PORT}/api/credits`);
-  console.log(`   → Encours  : http://localhost:${PORT}/api/encours`);
-  console.log(`   → Lettres  : http://localhost:${PORT}/api/lettres/f3`);
+  console.log(`   → Port      : ${PORT}`);
+  console.log(`   → API santé : /api/health`);
+  console.log(`   → Crédits  : /api/credits`);
+  console.log(`   → Encours  : /api/encours`);
+  console.log(`   → Lettres  : /api/lettres/f3`);
   console.log('');
+
+  // Test de connexion PostgreSQL (Neon) après démarrage
+  const { pool } = require('./db');
+  pool.connect()
+    .then(client => {
+      client.release();
+      console.log(`✅ PostgreSQL Neon connecté — ${process.env.DB_HOST}/${process.env.DB_NAME}`);
+    })
+    .catch(err => {
+      // On log l'erreur mais on ne coupe pas le serveur :
+      // les routes renverront une erreur SQL propre si la DB est inaccessible
+      console.error('⚠️  PostgreSQL connexion échouée (le serveur reste actif):', err.message);
+    });
 });
 
 module.exports = app;
